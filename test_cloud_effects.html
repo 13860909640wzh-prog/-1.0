@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>云朵飘动效果测试 - 大圣跑酷</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'Arial', sans-serif;
+            background-color: #000;
+            overflow: hidden;
+            touch-action: manipulation;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+        
+        canvas {
+            display: block;
+            background-color: #0f3460;
+            border: 2px solid #ffd700;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            z-index: 100;
+            max-width: 300px;
+        }
+        
+        .controls h3 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        .info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            z-index: 100;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        
+        .info h3 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .info-item {
+            margin-bottom: 5px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            margin: 5px 0;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .cloud-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            z-index: 100;
+            min-width: 250px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .cloud-info h3 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .cloud-item {
+            margin-bottom: 8px;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .preset-btn {
+            padding: 6px 8px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="canvas" width="800" height="600"></canvas>
+    </div>
+    
+    <div class="controls">
+        <h3>☁️ 云朵控制</h3>
+        
+        <div class="control-group">
+            <label for="cloudCount">云朵数量: <span id="cloudCountValue">8</span></label>
+            <input type="range" id="cloudCount" min="1" max="20" step="1" value="8">
+        </div>
+        
+        <div class="control-group">
+            <label for="waveAmplitude">波浪幅度: <span id="waveAmplitudeValue">15</span></label>
+            <input type="range" id="waveAmplitude" min="0" max="50" step="1" value="15">
+        </div>
+        
+        <div class="control-group">
+            <label for="waveFrequency">波浪频率: <span id="waveFrequencyValue">0.8</span></label>
+            <input type="range" id="waveFrequency" min="0.1" max="2" step="0.1" value="0.8">
+        </div>
+        
+        <div class="control-group">
+            <label for="shapeVariation">形状变化: <span id="shapeVariationValue">0.2</span></label>
+            <input type="range" id="shapeVariation" min="0" max="0.5" step="0.05" value="0.2">
+        </div>
+        
+        <div class="control-group">
+            <label for="cloudSpeed">云朵速度: <span id="cloudSpeedValue">1</span></label>
+            <input type="range" id="cloudSpeed" min="0.1" max="3" step="0.1" value="1">
+        </div>
+        
+        <div class="control-group">
+            <label for="timeSpeed">时间流速: <span id="timeSpeedValue">1</span></label>
+            <input type="range" id="timeSpeed" min="0.1" max="3" step="0.1" value="1">
+        </div>
+        
+        <div class="control-group">
+            <label>
+                <input type="checkbox" id="showClouds" checked> 显示云朵
+            </label>
+        </div>
+        
+        <div class="control-group">
+            <label>
+                <input type="checkbox" id="showTrails" checked> 显示轨迹
+            </label>
+        </div>
+        
+        <button id="resetBtn" class="btn">重置云朵</button>
+        
+        <div class="control-group">
+            <h4 style="margin-bottom: 5px;">预设效果:</h4>
+            <div class="preset-buttons">
+                <button class="preset-btn" data-preset="gentle">微风</button>
+                <button class="preset-btn" data-preset="stormy">风暴</button>
+                <button class="preset-btn" data-preset="playful">活泼</button>
+                <button class="preset-btn" data-preset="majestic">壮观</button>
+                <button class="preset-btn" data-preset="calm">平静</button>
+                <button class="preset-btn" data-preset="dynamic">动感</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info">
+        <h3>🌤️ 背景信息</h3>
+        <div class="info-item">游戏时间: <span id="gameTime">0.0</span>s</div>
+        <div class="info-item">FPS: <span id="fps">60</span></div>
+        <div class="info-item">活跃云朵: <span id="activeClouds">8</span></div>
+        <div class="info-item">平均速度: <span id="avgSpeed">0</span> px/s</div>
+        <div class="info-item">最大幅度: <span id="maxAmplitude">0</span> px</div>
+    </div>
+    
+    <div class="cloud-info">
+        <h3>☁️ 云朵详情</h3>
+        <div id="cloudDetails">
+            <!-- 云朵详细信息将在这里动态生成 -->
+        </div>
+    </div>
+
+    <script>
+        // 游戏常量
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const GAME_WIDTH = 800;
+        const GAME_HEIGHT = 600;
+        
+        // 动态背景配置
+        let CLOUD_COUNT = 8;
+        const DAY_CYCLE_DURATION = 20; // 20秒一个完整的昼夜循环
+        
+        // 控制参数
+        let timeSpeedMultiplier = 1;
+        let cloudSpeedMultiplier = 1;
+        let waveAmplitudeMultiplier = 1;
+        let waveFrequencyMultiplier = 1;
+        let shapeVariationMultiplier = 1;
+        let showClouds = true;
+        let showTrails = true;
+        
+        // 预设配置
+        const presets = {
+            gentle: {
+                cloudCount: 6,
+                waveAmplitude: 0.5,
+                waveFrequency: 0.5,
+                shapeVariation: 0.1,
+                cloudSpeed: 0.5
+            },
+            stormy: {
+                cloudCount: 12,
+                waveAmplitude: 2.5,
+                waveFrequency: 1.5,
+                shapeVariation: 0.4,
+                cloudSpeed: 2.5
+            },
+            playful: {
+                cloudCount: 10,
+                waveAmplitude: 1.8,
+                waveFrequency: 1.2,
+                shapeVariation: 0.3,
+                cloudSpeed: 1.3
+            },
+            majestic: {
+                cloudCount: 8,
+                waveAmplitude: 1.2,
+                waveFrequency: 0.7,
+                shapeVariation: 0.25,
+                cloudSpeed: 0.8
+            },
+            calm: {
+                cloudCount: 4,
+                waveAmplitude: 0.3,
+                waveFrequency: 0.4,
+                shapeVariation: 0.1,
+                cloudSpeed: 0.4
+            },
+            dynamic: {
+                cloudCount: 15,
+                waveAmplitude: 2.0,
+                waveFrequency: 1.8,
+                shapeVariation: 0.45,
+                cloudSpeed: 2.0
+            }
+        };
+        
+        // 游戏状态
+        let gameTime = 0;
+        let lastUpdateTime = 0;
+        let isGamePaused = false;
+        
+        // 性能监控
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
+        let currentFps = 60;
+        
+        // 动态背景元素
+        let clouds = [];
+        let cloudTrails = [];
+        
+        // 初始化动态背景
+        function initBackground() {
+            // 清空现有云朵
+            clouds = [];
+            cloudTrails = [];
+            
+            // 初始化云朵 - 分层设计
+            for (let i = 0; i < CLOUD_COUNT; i++) {
+                const layer = Math.floor(i / (CLOUD_COUNT / 3)); // 分为3层
+                const baseSize = 80 + Math.random() * 60;
+                
+                // 创建云朵对象
+                const cloud = {
+                    id: i,
+                    x: Math.random() * GAME_WIDTH,
+                    y: Math.random() * (GAME_HEIGHT * 0.7), // 云朵只出现在上半部分
+                    baseX: 0, // 基础X位置（用于波浪运动）
+                    baseY: 0, // 基础Y位置（用于波浪运动）
+                    width: baseSize,
+                    height: baseSize * (0.4 + Math.random() * 0.2), // 高度与宽度成比例
+                    speed: 20 + Math.random() * 30 + (layer * 15), // 上层云朵速度更快
+                    opacity: 0.3 + Math.random() * 0.4 - (layer * 0.1), // 上层云朵更透明
+                    layer: layer, // 记录云层
+                    waveAmplitudeX: 10 + Math.random() * 20, // 水平波浪振幅
+                    waveAmplitudeY: 5 + Math.random() * 10, // 垂直波浪振幅
+                    waveFrequencyX: 0.5 + Math.random() * 1, // 水平波浪频率
+                    waveFrequencyY: 0.3 + Math.random() * 0.7, // 垂直波浪频率
+                    wavePhaseX: Math.random() * Math.PI * 2, // 水平波浪相位
+                    wavePhaseY: Math.random() * Math.PI * 2, // 垂直波浪相位
+                    shapeVariation: Math.random() * 0.3 + 0.8, // 形状变化系数
+                    shapePhase: Math.random() * Math.PI * 2, // 形状变化相位
+                    shapeSpeed: 0.1 + Math.random() * 0.2, // 形状变化速度
+                    colorVariation: Math.random() * 0.1, // 颜色变化
+                    trail: [] // 轨迹点
+                };
+                
+                // 初始化基础位置
+                cloud.baseX = cloud.x;
+                cloud.baseY = cloud.y;
+                
+                clouds.push(cloud);
+                
+                // 初始化轨迹
+                cloudTrails.push([]);
+            }
+            
+            updateCloudDetails();
+        }
+        
+        // 更新动态背景
+        function updateBackground(deltaTime) {
+            const scaledDeltaTime = deltaTime * timeSpeedMultiplier;
+            const gameTimeOfDay = (gameTime % DAY_CYCLE_DURATION) / DAY_CYCLE_DURATION;
+            
+            // 更新云朵位置 - 波浪形飘动效果
+            clouds.forEach((cloud, index) => {
+                // 更新波浪相位
+                cloud.wavePhaseX += cloud.waveFrequencyX * waveFrequencyMultiplier * scaledDeltaTime;
+                cloud.wavePhaseY += cloud.waveFrequencyY * waveFrequencyMultiplier * scaledDeltaTime;
+                cloud.shapePhase += cloud.shapeSpeed * scaledDeltaTime;
+                
+                // 计算波浪形位移
+                const waveOffsetX = Math.sin(cloud.wavePhaseX) * cloud.waveAmplitudeX * waveAmplitudeMultiplier;
+                const waveOffsetY = Math.sin(cloud.wavePhaseY) * cloud.waveAmplitudeY * waveAmplitudeMultiplier;
+                
+                // 更新基础位置（水平移动）
+                cloud.baseX -= cloud.speed * cloudSpeedMultiplier * scaledDeltaTime;
+                
+                // 应用波浪效果到实际位置
+                cloud.x = cloud.baseX + waveOffsetX;
+                cloud.y = cloud.baseY + waveOffsetY;
+                
+                // 记录轨迹点（每隔一定时间）
+                if (showTrails && frameCount % 10 === 0) {
+                    cloudTrails[index].push({
+                        x: cloud.x + cloud.width / 2,
+                        y: cloud.y + cloud.height / 2,
+                        time: gameTime
+                    });
+                    
+                    // 限制轨迹点数量
+                    if (cloudTrails[index].length > 50) {
+                        cloudTrails[index].shift();
+                    }
+                }
+                
+                // 云朵移出屏幕后从右侧重新进入
+                if (cloud.x + cloud.width < 0) {
+                    cloud.baseX = GAME_WIDTH;
+                    cloud.baseY = Math.random() * (GAME_HEIGHT * 0.7);
+                    cloud.x = cloud.baseX;
+                    cloud.y = cloud.baseY;
+                    cloud.opacity = 0.3 + Math.random() * 0.4 - (cloud.layer * 0.1);
+                    
+                    // 重置波浪相位，避免所有云朵运动同步
+                    cloud.wavePhaseX = Math.random() * Math.PI * 2;
+                    cloud.wavePhaseY = Math.random() * Math.PI * 2;
+                    
+                    // 清空轨迹
+                    cloudTrails[index] = [];
+                }
+            });
+            
+            // 更新云朵详细信息显示
+            if (frameCount % 60 === 0) { // 每秒更新一次
+                updateCloudDetails();
+                updateStats();
+            }
+        }
+        
+        // 绘制云朵形状 - 动态变化的云朵轮廓
+        function drawCloud(ctx, cloud) {
+            const x = cloud.x;
+            const y = cloud.y;
+            const width = cloud.width;
+            const height = cloud.height;
+            
+            // 计算当前形状变化系数
+            const currentShapeVariation = 1 + Math.sin(cloud.shapePhase) * cloud.shapeVariation * shapeVariationMultiplier;
+            
+            ctx.beginPath();
+            
+            // 使用多个圆形组合成云朵形状，加入动态变化
+            const centerY = y + height * 0.4; // 云朵中心偏上
+            const baseRadius = height * 0.4;
+            
+            // 云朵组成部分的配置
+            const cloudParts = [
+                { x: 0.25, y: 0, size: 1.0, phase: 0 },
+                { x: 0.5, y: -0.2, size: 0.9, phase: Math.PI/3 },
+                { x: 0.75, y: 0, size: 1.0, phase: Math.PI*2/3 },
+                { x: 0.4, y: 0.3, size: 0.7, phase: Math.PI },
+                { x: 0.65, y: 0.2, size: 0.6, phase: Math.PI*4/3 }
+            ];
+            
+            // 绘制每个云朵部分，应用形状变化
+            cloudParts.forEach(part => {
+                const partPhase = cloud.shapePhase + part.phase;
+                const partVariation = 1 + Math.sin(partPhase) * 0.2;
+                const partRadius = baseRadius * part.size * currentShapeVariation * partVariation;
+                const partX = x + width * part.x;
+                const partY = centerY + baseRadius * part.y;
+                
+                ctx.arc(partX, partY, partRadius, 0, Math.PI * 2);
+            });
+            
+            // 云朵底部 - 使用曲线而不是直线
+            const bottomY = centerY + baseRadius * 0.3;
+            ctx.moveTo(x, bottomY);
+            
+            // 使用贝塞尔曲线创建波浪形底部
+            const curveAmplitude = height * 0.1 * currentShapeVariation;
+            ctx.bezierCurveTo(
+                x + width * 0.25, bottomY + curveAmplitude,
+                x + width * 0.75, bottomY - curveAmplitude,
+                x + width, bottomY
+            );
+            
+            ctx.closePath();
+            ctx.fill();
+            
+            // 添加云朵内部纹理
+            if (Math.random() < 0.5) {
+                ctx.globalAlpha *= 0.3;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                
+                // 绘制内部亮点
+                const highlightCount = 2 + Math.floor(Math.random() * 3);
+                for (let i = 0; i < highlightCount; i++) {
+                    const highlightX = x + Math.random() * width * 0.8 + width * 0.1;
+                    const highlightY = y + Math.random() * height * 0.6 + height * 0.2;
+                    const highlightSize = baseRadius * 0.2 * (0.5 + Math.random());
+                    
+                    ctx.beginPath();
+                    ctx.arc(highlightX, highlightY, highlightSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+        
+        // 绘制动态背景
+        function drawBackground() {
+            const gameTimeOfDay = (gameTime % DAY_CYCLE_DURATION) / DAY_CYCLE_DURATION;
+            
+            // 绘制渐变天空背景 - 根据游戏时间变化颜色
+            const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+            
+            // 根据时间调整背景颜色
+            if (gameTimeOfDay < 0.5) {
+                // 白天效果 - 蓝色系
+                const intensity = 1 - Math.abs(gameTimeOfDay - 0.25) * 4; // 中间最亮
+                const blueTop = Math.floor(15 + intensity * 20); // #0f3460 到 #194970
+                const blueBottom = Math.floor(22 + intensity * 25); // #16213e 到 #1e2e50
+                
+                gradient.addColorStop(0, `rgb(15, ${blueTop}, 96)`); // 深蓝色天空顶部
+                gradient.addColorStop(1, `rgb(22, 33, ${blueBottom})`); // 稍浅的蓝色底部
+            } else {
+                // 黄昏/夜晚效果 - 紫色系
+                const intensity = Math.abs(gameTimeOfDay - 0.75) * 4; // 边缘最暗
+                const purpleTop = Math.floor(20 + intensity * 15); // #14142e 到 #1e2345
+                const purpleBottom = Math.floor(25 + intensity * 20); // #0f1429 到 #161d3a
+                
+                gradient.addColorStop(0, `rgb(20, 20, ${purpleTop})`); // 紫色天空顶部
+                gradient.addColorStop(1, `rgb(15, 20, ${purpleBottom})`); // 深紫色底部
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            
+            // 绘制云朵轨迹
+            if (showTrails) {
+                cloudTrails.forEach((trail, index) => {
+                    if (trail.length > 1) {
+                        const cloud = clouds[index];
+                        ctx.globalAlpha = cloud.opacity * 0.2;
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        
+                        for (let i = 0; i < trail.length; i++) {
+                            const point = trail[i];
+                            const age = gameTime - point.time;
+                            const fadeFactor = Math.max(0, 1 - age / 5); // 5秒内逐渐消失
+                            
+                            ctx.globalAlpha = cloud.opacity * 0.2 * fadeFactor;
+                            
+                            if (i === 0) {
+                                ctx.moveTo(point.x, point.y);
+                            } else {
+                                ctx.lineTo(point.x, point.y);
+                            }
+                        }
+                        
+                        ctx.stroke();
+                    }
+                });
+            }
+            
+            // 绘制云朵 - 白天云朵更明显
+            if (showClouds) {
+                const cloudOpacity = gameTimeOfDay < 0.5 ? 1 : 0.5; // 夜晚云朵较暗
+                
+                // 按层排序，确保正确的绘制顺序（远的先画）
+                const sortedClouds = [...clouds].sort((a, b) => b.layer - a.layer);
+                
+                sortedClouds.forEach(cloud => {
+                    const finalOpacity = cloud.opacity * cloudOpacity;
+                    if (finalOpacity > 0.1) { // 透明度太低的云朵不显示
+                        ctx.save();
+                        ctx.globalAlpha = finalOpacity;
+                        
+                        // 根据时间调整云朵颜色
+                        if (gameTimeOfDay < 0.5) {
+                            // 白天云朵 - 加入微妙的颜色变化
+                            const colorVariation = Math.sin(cloud.shapePhase) * cloud.colorVariation;
+                            const r = Math.floor(255 * (1 + colorVariation));
+                            const g = Math.floor(255 * (1 + colorVariation * 0.8));
+                            const b = Math.floor(255 * (1 + colorVariation * 0.6));
+                            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.95)`;
+                        } else {
+                            // 夜晚云朵 - 深蓝色调
+                            ctx.fillStyle = 'rgba(40, 40, 60, 0.8)';
+                        }
+                        
+                        // 绘制主云朵
+                        drawCloud(ctx, cloud);
+                        
+                        // 添加云朵边缘光晕效果
+                        if (gameTimeOfDay < 0.5 && Math.random() < 0.3) {
+                            ctx.globalAlpha = finalOpacity * 0.2;
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                            
+                            // 创建稍大的光晕云朵
+                            const glowCloud = {
+                                ...cloud,
+                                width: cloud.width * 1.1,
+                                height: cloud.height * 1.1
+                            };
+                            drawCloud(ctx, glowCloud);
+                        }
+                        
+                        ctx.restore();
+                    }
+                });
+            }
+            
+            // 重置透明度
+            ctx.globalAlpha = 1;
+            
+            // 添加大气辉光效果
+            if (gameTimeOfDay > 0.4 && gameTimeOfDay < 0.6) {
+                // 黄昏/黎明时分的辉光
+                const glowIntensity = Math.abs(0.5 - gameTimeOfDay) * 20;
+                const gradient = ctx.createRadialGradient(
+                    GAME_WIDTH / 2, GAME_HEIGHT / 2, 0,
+                    GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH
+                );
+                gradient.addColorStop(0, `rgba(255, 165, 0, ${glowIntensity * 0.01})`);
+                gradient.addColorStop(1, 'rgba(255, 165, 0, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            }
+        }
+        
+        // 更新云朵详细信息显示
+        function updateCloudDetails() {
+            const cloudDetails = document.getElementById('cloudDetails');
+            let html = '';
+            
+            clouds.forEach((cloud, index) => {
+                const waveX = Math.sin(cloud.wavePhaseX) * cloud.waveAmplitudeX * waveAmplitudeMultiplier;
+                const waveY = Math.sin(cloud.wavePhaseY) * cloud.waveAmplitudeY * waveAmplitudeMultiplier;
+                
+                html += `
+                    <div class="cloud-item">
+                        <strong>云朵 ${index + 1}</strong><br>
+                        位置: (${Math.round(cloud.x)}, ${Math.round(cloud.y)})<br>
+                        速度: ${Math.round(cloud.speed * cloudSpeedMultiplier)} px/s<br>
+                        波浪: X:${Math.round(waveX)}px, Y:${Math.round(waveY)}px<br>
+                        透明度: ${(cloud.opacity * 100).toFixed(0)}%<br>
+                        层级: ${cloud.layer + 1}
+                    </div>
+                `;
+            });
+            
+            cloudDetails.innerHTML = html;
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            const activeClouds = clouds.length;
+            const avgSpeed = clouds.reduce((sum, cloud) => sum + cloud.speed * cloudSpeedMultiplier, 0) / activeClouds;
+            const maxAmplitude = Math.max(...clouds.map(cloud => cloud.waveAmplitudeX * waveAmplitudeMultiplier));
+            
+            document.getElementById('activeClouds').textContent = activeClouds;
+            document.getElementById('avgSpeed').textContent = Math.round(avgSpeed);
+            document.getElementById('maxAmplitude').textContent = Math.round(maxAmplitude);
+        }
+        
+        // 渲染游戏
+        function renderGame() {
+            // 清空画布
+            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            
+            // 绘制动态背景
+            drawBackground();
+            
+            // 绘制调试信息
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(10, GAME_HEIGHT - 40, 200, 30);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Arial';
+            ctx.fillText(`云朵数量: ${clouds.length}`, 20, GAME_HEIGHT - 20);
+        }
+        
+        // 游戏循环
+        function gameLoop() {
+            const currentTime = performance.now();
+            const deltaTime = (currentTime - lastUpdateTime) / 1000; // 转换为秒
+            lastUpdateTime = currentTime;
+            
+            // 更新FPS
+            frameCount++;
+            if (currentTime - lastFpsUpdate >= 1000) {
+                currentFps = Math.round(frameCount * 1000 / (currentTime - lastFpsUpdate));
+                frameCount = 0;
+                lastFpsUpdate = currentTime;
+                document.getElementById('fps').textContent = currentFps;
+            }
+            
+            if (!isGamePaused) {
+                gameTime += deltaTime;
+                document.getElementById('gameTime').textContent = gameTime.toFixed(1);
+                
+                // 更新动态背景
+                updateBackground(deltaTime);
+            }
+            
+            // 渲染游戏
+            renderGame();
+            
+            // 继续游戏循环
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // 应用预设配置
+        function applyPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+            
+            // 更新云朵数量
+            CLOUD_COUNT = preset.cloudCount;
+            document.getElementById('cloudCount').value = CLOUD_COUNT;
+            document.getElementById('cloudCountValue').textContent = CLOUD_COUNT;
+            
+            // 更新波浪幅度
+            waveAmplitudeMultiplier = preset.waveAmplitude;
+            document.getElementById('waveAmplitude').value = preset.waveAmplitude * 10;
+            document.getElementById('waveAmplitudeValue').textContent = preset.waveAmplitude * 10;
+            
+            // 更新波浪频率
+            waveFrequencyMultiplier = preset.waveFrequency;
+            document.getElementById('waveFrequency').value = preset.waveFrequency;
+            document.getElementById('waveFrequencyValue').textContent = preset.waveFrequency.toFixed(1);
+            
+            // 更新形状变化
+            shapeVariationMultiplier = preset.shapeVariation;
+            document.getElementById('shapeVariation').value = preset.shapeVariation;
+            document.getElementById('shapeVariationValue').textContent = preset.shapeVariation.toFixed(2);
+            
+            // 更新云朵速度
+            cloudSpeedMultiplier = preset.cloudSpeed;
+            document.getElementById('cloudSpeed').value = preset.cloudSpeed;
+            document.getElementById('cloudSpeedValue').textContent = preset.cloudSpeed.toFixed(1);
+            
+            // 重新初始化云朵
+            initBackground();
+        }
+        
+        // 初始化控制事件
+        function initControls() {
+            // 云朵数量控制
+            const cloudCountSlider = document.getElementById('cloudCount');
+            const cloudCountValue = document.getElementById('cloudCountValue');
+            cloudCountSlider.addEventListener('input', function() {
+                CLOUD_COUNT = parseInt(this.value);
+                cloudCountValue.textContent = CLOUD_COUNT;
+                initBackground();
+            });
+            
+            // 波浪幅度控制
+            const waveAmplitudeSlider = document.getElementById('waveAmplitude');
+            const waveAmplitudeValue = document.getElementById('waveAmplitudeValue');
+            waveAmplitudeSlider.addEventListener('input', function() {
+                waveAmplitudeMultiplier = parseInt(this.value) / 10;
+                waveAmplitudeValue.textContent = this.value;
+            });
+            
+            // 波浪频率控制
+            const waveFrequencySlider = document.getElementById('waveFrequency');
+            const waveFrequencyValue = document.getElementById('waveFrequencyValue');
+            waveFrequencySlider.addEventListener('input', function() {
+                waveFrequencyMultiplier = parseFloat(this.value);
+                waveFrequencyValue.textContent = waveFrequencyMultiplier.toFixed(1);
+            });
+            
+            // 形状变化控制
+            const shapeVariationSlider = document.getElementById('shapeVariation');
+            const shapeVariationValue = document.getElementById('shapeVariationValue');
+            shapeVariationSlider.addEventListener('input', function() {
+                shapeVariationMultiplier = parseFloat(this.value);
+                shapeVariationValue.textContent = shapeVariationMultiplier.toFixed(2);
+            });
+            
+            // 云朵速度控制
+            const cloudSpeedSlider = document.getElementById('cloudSpeed');
+            const cloudSpeedValue = document.getElementById('cloudSpeedValue');
+            cloudSpeedSlider.addEventListener('input', function() {
+                cloudSpeedMultiplier = parseFloat(this.value);
+                cloudSpeedValue.textContent = cloudSpeedMultiplier.toFixed(1);
+            });
+            
+            // 时间流速控制
+            const timeSpeedSlider = document.getElementById('timeSpeed');
+            const timeSpeedValue = document.getElementById('timeSpeedValue');
+            timeSpeedSlider.addEventListener('input', function() {
+                timeSpeedMultiplier = parseFloat(this.value);
+                timeSpeedValue.textContent = timeSpeedMultiplier.toFixed(1);
+            });
+            
+            // 显示/隐藏云朵
+            const showCloudsCheckbox = document.getElementById('showClouds');
+            showCloudsCheckbox.addEventListener('change', function() {
+                showClouds = this.checked;
+            });
+            
+            // 显示/隐藏轨迹
+            const showTrailsCheckbox = document.getElementById('showTrails');
+            showTrailsCheckbox.addEventListener('change', function() {
+                showTrails = this.checked;
+                if (!showTrails) {
+                    cloudTrails = clouds.map(() => []);
+                }
+            });
+            
+            // 重置云朵
+            const resetBtn = document.getElementById('resetBtn');
+            resetBtn.addEventListener('click', function() {
+                initBackground();
+            });
+            
+            // 预设按钮
+            const presetButtons = document.querySelectorAll('.preset-btn');
+            presetButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const presetName = this.dataset.preset;
+                    applyPreset(presetName);
+                    
+                    // 高亮选中的预设
+                    presetButtons.forEach(btn => btn.style.background = 'rgba(255, 255, 255, 0.1)');
+                    this.style.background = 'rgba(255, 215, 0, 0.3)';
+                });
+            });
+            
+            // 键盘控制
+            document.addEventListener('keydown', function(event) {
+                if (event.code === 'Space') {
+                    event.preventDefault();
+                    isGamePaused = !isGamePaused;
+                } else if (event.code === 'KeyR') {
+                    initBackground();
+                }
+            });
+        }
+        
+        // 初始化游戏
+        function init() {
+            // 初始化动态背景
+            initBackground();
+            
+            // 初始化控制
+            initControls();
+            
+            // 设置游戏循环
+            lastUpdateTime = performance.now();
+            lastFpsUpdate = lastUpdateTime;
+            gameLoop();
+        }
+        
+        // 启动游戏
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>大圣跑酷 - 云端冒险</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'Arial', sans-serif;
+            background-color: #000;
+            overflow: hidden;
+            touch-action: manipulation;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+        
+        canvas {
+            display: block;
+            background-color: #0f3460;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            z-index: 100;
+            overflow: hidden;
+        }
+        
+        .screen-content {
+            background: rgba(26, 26, 46, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.5s ease-out;
+            color: white;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            color: #FFD700;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            outline: none;
+            min-width: 150px;
+            display: inline-block;
+            text-decoration: none;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #FFD700;
+            border: 2px solid #FFD700;
+            padding: 10px 22px;
+            margin: 10px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            min-width: 150px;
+            display: inline-block;
+            text-decoration: none;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 215, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        #gameHUD {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+        }
+        
+        .score-container {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .energy-container {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .energy-bar {
+            width: 100px;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .energy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+            transition: width 0.3s ease;
+        }
+        
+        .game-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #dashBtn, #pauseBtn {
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 2px solid #FFD700;
+            padding: 10px 15px;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #dashBtn:hover, #pauseBtn:hover {
+            background: rgba(255, 215, 0, 0.2);
+        }
+        
+        #dashBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .rules-list {
+            text-align: left;
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        
+        .rules-list li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .settings-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .settings-group label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .btn-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 28px;
+            }
+            
+            h2 {
+                font-size: 24px;
+            }
+            
+            .btn, .btn-secondary {
+                padding: 10px 20px;
+                font-size: 14px;
+                min-width: 120px;
+            }
+            
+            #gameHUD {
+                flex-direction: column;
+                gap: 10px;
+                top: 10px;
+                left: 10px;
+                right: 10px;
+            }
+            
+            .score-container, .energy-container {
+                padding: 8px 15px;
+                font-size: 16px;
+            }
+            
+            #dashBtn, #pauseBtn {
+                width: 45px;
+                height: 45px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <!-- 开始屏幕 -->
+        <div id="startScreen" class="screen">
+            <div class="screen-content">
+                <h1>大圣跑酷</h1>
+                <p>在云端跳跃，收集蟠桃，成为斗战胜佛！</p>
+                <button id="startBtn" class="btn">开始游戏</button>
+                <button id="rulesBtn" class="btn-secondary">游戏规则</button>
+                <button id="settingsBtn" class="btn-secondary">设置</button>
+            </div>
+        </div>
+        
+        <!-- 规则屏幕 -->
+        <div id="rulesScreen" class="screen hidden">
+            <div class="screen-content">
+                <h2>游戏规则</h2>
+                <ul class="rules-list">
+                    <li>点击屏幕跳跃，再次点击进行二段跳</li>
+                    <li>收集小蟠桃获得1分，收集大蟠桃获得5分</li>
+                    <li>收集20积分可获得一次筋斗云冲刺</li>
+                    <li>筋斗云冲刺期间无敌，自动前进8秒，蟠桃数量增加三倍</li>
+                    <li>不要从云朵上掉落，否则游戏结束</li>
+                </ul>
+                <button id="backToStartBtn" class="btn">返回</button>
+            </div>
+        </div>
+        
+        <!-- 设置屏幕 -->
+        <div id="settingsScreen" class="screen hidden">
+            <div class="screen-content">
+                <h2>设置</h2>
+                <div class="settings-group">
+                    <label>
+                        <span>音效</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="soundToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </label>
+                </div>
+                <button id="backToMenuFromSettingsBtn" class="btn">返回</button>
+            </div>
+        </div>
+        
+        <!-- 暂停屏幕 -->
+        <div id="pauseScreen" class="screen hidden">
+            <div class="screen-content">
+                <h2>游戏暂停</h2>
+                <button id="resumeBtn" class="btn">继续游戏</button>
+                <button id="restartBtn" class="btn-secondary">重新开始</button>
+                <button id="exitBtn" class="btn">退出游戏</button>
+            </div>
+        </div>
+        
+        <!-- 结束屏幕 -->
+        <div id="gameOverScreen" class="screen hidden">
+            <div class="screen-content">
+                <h2>游戏结束</h2>
+                <p style="text-align: center; color: #e0e0e0;">你的得分</p>
+                <p style="font-size: 32px; color: #FFD700; margin: 10px 0; text-align: center;">
+                    <span id="finalScore">0</span>
+                </p>
+                <div style="text-align: center;">
+                    <p style="color: #e0e0e0;">最高分</p>
+                    <p style="font-size: 24px; margin: 10px 0; color: #e0e0e0;">
+                        <span id="highScore">0</span>
+                    </p>
+                </div>
+                <button id="playAgainBtn" class="btn">再玩一次</button>
+                <button id="shareBtn" class="btn-secondary">分享成绩</button>
+            </div>
+        </div>
+        
+        <!-- 游戏HUD -->
+        <div id="gameHUD" class="hidden">
+            <div class="score-container">
+                <span>得分:</span>
+                <span id="scoreDisplay">0</span>
+            </div>
+            <div class="energy-container">
+                <span>筋斗云:</span>
+                <div class="energy-bar">
+                    <div id="energyFill" class="energy-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="game-buttons">
+                <button id="dashBtn" disabled title="筋斗云冲刺">
+                    <i class="fa fa-bolt"></i>
+                </button>
+                <button id="pauseBtn" title="暂停游戏">
+                    <i class="fa fa-pause"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 游戏常量
+        const GAME_WIDTH = 800;
+        const GAME_HEIGHT = 600;
+        const GRAVITY = 800;
+        const JUMP_FORCE = 400;
+        const DOUBLE_JUMP_FORCE = 350;
+        const MAX_FALL_SPEED = 500;
+        const INITIAL_SPEED = 150;
+        const MAX_SPEED = 350;
+        const SPEED_UP_DURATION = 150;
+        const DASH_SPEED = 500;
+        const DASH_DURATION = 8;
+        const DASH_COST = 20;
+        const PLATFORM_WIDTH = 64;
+        const PLATFORM_HEIGHT = 32;
+        const PLAYER_WIDTH = 64;
+        const PLAYER_HEIGHT = 64;
+        const PEACH_SCORE = 1;
+        const BIG_PEACH_SCORE = 5;
+        
+        // 游戏状态
+        const GAME_STATE = {
+            MENU: 0,
+            PLAYING: 1,
+            PAUSED: 2,
+            GAME_OVER: 3
+        };
+        
+        const PLAYER_STATE = {
+            RUNNING: 0,
+            JUMPING: 1,
+            DOUBLE_JUMPING: 2,
+            FALLING: 3,
+            DASHING: 4,
+            DEAD: 5
+        };
+        
+        // 全局变量
+        let canvas, ctx;
+        let gameState = GAME_STATE.MENU;
+        let score = 0;
+        let highScore = 0;
+        let gameSpeed = INITIAL_SPEED;
+        let gameTime = 0;
+        let dashEnergy = 0;
+        let isDashing = false;
+        let dashTime = 0;
+        let platforms = [];
+        let peaches = [];
+        let bigPeaches = [];
+        let particles = [];
+        let lastTime = 0;
+        let gameLoopId = null;
+        let keys = {};
+        let touchStartY = 0;
+        let currentFps = 60;
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
+        let lastFrameTime = 0;
+        
+        // 玩家对象
+        const player = {
+            x: 100,
+            y: GAME_HEIGHT / 2,
+            width: PLAYER_WIDTH,
+            height: PLAYER_HEIGHT,
+            velocityY: 0,
+            isOnGround: false,
+            hasDoubleJumped: false,
+            state: PLAYER_STATE.RUNNING,
+            animationFrame: 0,
+            animationTime: 0,
+            animationSpeed: 0.15,
+            
+            update: function(deltaTime) {
+                if (this.state === PLAYER_STATE.DEAD) return;
+                
+                // 冲刺时不受重力影响，保持飞行状态
+                if (!isDashing) {
+                    // 应用重力
+                    this.velocityY += GRAVITY * deltaTime;
+                    if (this.velocityY > MAX_FALL_SPEED) {
+                        this.velocityY = MAX_FALL_SPEED;
+                    }
+                } else {
+                    // 冲刺时保持在空中，设置一个轻微的上升力
+                    this.velocityY = -20;
+                }
+                
+                // 更新位置
+                this.y += this.velocityY * deltaTime;
+                
+                // 更新动画
+                this.animationTime += deltaTime;
+                if (this.animationTime >= this.animationSpeed) {
+                    // 使用3帧动画
+                    this.animationFrame = (this.animationFrame + 1) % 3;
+                    this.animationTime = 0;
+                }
+                
+                // 更新状态
+                if (isDashing) {
+                    this.state = PLAYER_STATE.DASHING;
+                } else if (this.velocityY < 0) {
+                    this.state = this.hasDoubleJumped ? PLAYER_STATE.DOUBLE_JUMPING : PLAYER_STATE.JUMPING;
+                } else if (this.velocityY > 50) {
+                    this.state = PLAYER_STATE.FALLING;
+                } else if (this.isOnGround) {
+                    this.state = PLAYER_STATE.RUNNING;
+                }
+                
+                // 检查是否掉落（冲刺时不会掉落）
+                if (!isDashing && this.y > GAME_HEIGHT) {
+                    gameOver();
+                }
+            },
+            
+            jump: function() {
+                if (this.state === PLAYER_STATE.DEAD || isDashing) return;
+                
+                if (this.isOnGround) {
+                    this.velocityY = -JUMP_FORCE;
+                    this.isOnGround = false;
+                    this.hasDoubleJumped = false;
+                    this.state = PLAYER_STATE.JUMPING;
+                    playSound('jump');
+                } else if (!this.hasDoubleJumped) {
+                    this.velocityY = -DOUBLE_JUMP_FORCE;
+                    this.hasDoubleJumped = true;
+                    this.state = PLAYER_STATE.DOUBLE_JUMPING;
+                    playSound('doubleJump');
+                }
+            },
+            
+            dash: function() {
+                if (dashEnergy >= DASH_COST && !isDashing) {
+                    isDashing = true;
+                    dashTime = DASH_DURATION;
+                    dashEnergy -= DASH_COST;
+                    this.state = PLAYER_STATE.DASHING;
+                    playSound('dash');
+                    updateDashEnergy();
+                }
+            },
+            
+            draw: function() {
+                ctx.save();
+                
+                // 冲刺时的特效
+                if (isDashing) {
+                    ctx.globalAlpha = 0.8;
+                    ctx.shadowColor = '#FFD700';
+                    ctx.shadowBlur = 15;
+                }
+                
+                // 绘制玩家（使用简单的方块代替图片）
+                ctx.fillStyle = '#FF4500';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                ctx.restore();
+            }
+        };
+        
+        // 音效对象
+        const sounds = {};
+        
+        // 设置对象
+        const settings = {
+            sound: true
+        };
+        
+        // 游戏循环
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+            lastFrameTime = timestamp;
+            
+            // 更新游戏状态
+            if (gameState === GAME_STATE.PLAYING) {
+                update(deltaTime);
+            }
+            
+            // 渲染游戏
+            render();
+            
+            // 继续游戏循环
+            if (gameState === GAME_STATE.PLAYING) {
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // 更新游戏逻辑
+        function update(deltaTime) {
+            // 更新游戏时间
+            gameTime += deltaTime;
+            
+            // 更新游戏速度
+            if (gameTime < SPEED_UP_DURATION) {
+                // 线性增长速度
+                gameSpeed = INITIAL_SPEED + (MAX_SPEED - INITIAL_SPEED) * (gameTime / SPEED_UP_DURATION);
+            } else {
+                gameSpeed = MAX_SPEED;
+            }
+            
+            // 更新冲刺状态
+            if (isDashing) {
+                dashTime -= deltaTime;
+                if (dashTime <= 0) {
+                    isDashing = false;
+                    player.state = PLAYER_STATE.RUNNING;
+                }
+            }
+            
+            // 更新玩家
+            player.update(deltaTime);
+            
+            // 更新平台
+            updatePlatforms(deltaTime);
+            
+            // 更新桃子
+            updatePeaches(deltaTime);
+            
+            // 检测碰撞
+            checkCollisions();
+        }
+        
+        // 更新平台
+        function updatePlatforms(deltaTime) {
+            const speed = isDashing ? DASH_SPEED : gameSpeed;
+            
+            // 移动平台
+            for (let i = platforms.length - 1; i >= 0; i--) {
+                platforms[i].x -= speed * deltaTime;
+                
+                // 移除屏幕外的平台
+                if (platforms[i].x + platforms[i].width < 0) {
+                    platforms.splice(i, 1);
+                }
+            }
+            
+            // 生成新平台
+            const lastPlatform = platforms[platforms.length - 1];
+            if (lastPlatform && lastPlatform.x + lastPlatform.width < GAME_WIDTH + 200) {
+                const newPlatform = generatePlatform(lastPlatform.x + lastPlatform.width);
+                
+                // 随机生成桃子
+                if (Math.random() > 0.7) {
+                    generatePeach(newPlatform.x + newPlatform.width / 2 - PLATFORM_WIDTH / 4, newPlatform.y);
+                }
+                
+                // 随机生成大桃子
+                if (Math.random() > 0.95) {
+                    generateBigPeach(newPlatform.x + newPlatform.width / 2 - PLATFORM_WIDTH / 2, newPlatform.y);
+                }
+            }
+        }
+        
+        // 生成平台
+        function generatePlatform(x) {
+            const platform = {
+                x: x,
+                y: GAME_HEIGHT / 2 + (Math.random() - 0.5) * 200,
+                width: PLATFORM_WIDTH * (2 + Math.floor(Math.random() * 3)),
+                height: PLATFORM_HEIGHT
+            };
+            
+            // 确保平台在屏幕内
+            if (platform.y < PLATFORM_HEIGHT) {
+                platform.y = PLATFORM_HEIGHT;
+            } else if (platform.y > GAME_HEIGHT - PLATFORM_HEIGHT * 2) {
+                platform.y = GAME_HEIGHT - PLATFORM_HEIGHT * 2;
+            }
+            
+            platforms.push(platform);
+            return platform;
+        }
+        
+        // 更新桃子
+        function updatePeaches(deltaTime) {
+            const speed = isDashing ? DASH_SPEED : gameSpeed;
+            
+            // 移动小桃子
+            for (let i = peaches.length - 1; i >= 0; i--) {
+                peaches[i].x -= speed * deltaTime;
+                
+                // 移除屏幕外的小桃子
+                if (peaches[i].x + peaches[i].width < 0) {
+                    peaches.splice(i, 1);
+                }
+            }
+            
+            // 移动大桃子
+            for (let i = bigPeaches.length - 1; i >= 0; i--) {
+                bigPeaches[i].x -= speed * deltaTime;
+                bigPeaches[i].pulseTime += deltaTime;
+                
+                // 移除屏幕外的大桃子
+                if (bigPeaches[i].x + bigPeaches[i].width < 0) {
+                    bigPeaches.splice(i, 1);
+                }
+            }
+        }
+        
+        // 生成小桃子
+        function generatePeach(x, y) {
+            peaches.push({
+                x: x,
+                y: y - 32,
+                width: 32,
+                height: 32,
+                collected: false
+            });
+        }
+        
+        // 生成大桃子
+        function generateBigPeach(x, y) {
+            bigPeaches.push({
+                x: x,
+                y: y - 48,
+                width: 48,
+                height: 48,
+                pulseTime: 0,
+                collected: false
+            });
+        }
+        
+        // 检测碰撞
+        function checkCollisions() {
+            // 平台碰撞
+            player.isOnGround = false;
+            
+            // 冲刺时不进行平台碰撞检测，实现无敌飞行
+            if (!isDashing) {
+                // 使用边界框优化碰撞检测
+                const playerBottom = player.y + player.height;
+                const playerRight = player.x + player.width;
+                
+                // 只检查屏幕内的平台
+                for (let i = 0; i < platforms.length; i++) {
+                    const platform = platforms[i];
+                    
+                    // 快速排除明显不碰撞的情况
+                    if (playerRight < platform.x || player.x > platform.x + platform.width) {
+                        continue;
+                    }
+                    
+                    if (
+                        playerRight > platform.x &&
+                        player.x < platform.x + platform.width &&
+                        playerBottom > platform.y &&
+                        playerBottom < platform.y + 20 &&
+                        player.velocityY > 0
+                    ) {
+                        player.y = platform.y - player.height;
+                        player.velocityY = 0;
+                        player.isOnGround = true;
+                        player.hasDoubleJumped = false;
+                        break; // 只处理一个平台碰撞
+                    }
+                }
+            }
+            
+            // 桃子碰撞检测
+            let collectedPeaches = 0;
+            let collectedBigPeaches = 0;
+            
+            // 小桃子碰撞
+            for (let i = peaches.length - 1; i >= 0; i--) {
+                const peach = peaches[i];
+                
+                if (!peach.collected &&
+                    player.x + player.width > peach.x &&
+                    player.x < peach.x + peach.width &&
+                    player.y + player.height > peach.y &&
+                    player.y < peach.y + peach.height) {
+                    
+                    peach.collected = true;
+                    collectedPeaches++;
+                }
+            }
+            
+            // 大桃子碰撞
+            for (let i = bigPeaches.length - 1; i >= 0; i--) {
+                const bigPeach = bigPeaches[i];
+                
+                if (!bigPeach.collected &&
+                    player.x + player.width > bigPeach.x &&
+                    player.x < bigPeach.x + bigPeach.width &&
+                    player.y + player.height > bigPeach.y &&
+                    player.y < bigPeach.y + bigPeach.height) {
+                    
+                    bigPeach.collected = true;
+                    collectedBigPeaches++;
+                }
+            }
+            
+            // 批量更新分数和能量
+            if (collectedPeaches > 0 || collectedBigPeaches > 0) {
+                // 冲刺时蟠桃数量增加三倍
+                const scoreMultiplier = isDashing ? 3 : 1;
+                
+                const totalScore = (collectedPeaches * PEACH_SCORE + collectedBigPeaches * BIG_PEACH_SCORE) * scoreMultiplier;
+                const totalEnergy = (collectedPeaches * PEACH_SCORE + collectedBigPeaches * BIG_PEACH_SCORE) * scoreMultiplier;
+                
+                score += totalScore;
+                dashEnergy += totalEnergy;
+                
+                // 播放收集音效
+                if (settings.sound) {
+                    if (collectedBigPeaches > 0) {
+                        playSound('bigCollect');
+                    } else {
+                        playSound('collect');
+                    }
+                }
+                
+                // 更新UI
+                document.getElementById('scoreDisplay').textContent = Math.floor(score);
+                updateDashEnergy();
+            }
+            
+            // 移除已收集的桃子
+            peaches = peaches.filter(peach => !peach.collected);
+            bigPeaches = bigPeaches.filter(bigPeach => !bigPeach.collected);
+        }
+        
+        // 渲染游戏
+        function render() {
+            // 清空画布
+            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            
+            // 绘制背景
+            ctx.fillStyle = '#0f3460';
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            
+            // 绘制平台
+            for (const platform of platforms) {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+            }
+            
+            // 绘制桃子
+            for (const peach of peaches) {
+                ctx.fillStyle = '#FF6347';
+                ctx.beginPath();
+                ctx.arc(peach.x + peach.width / 2, peach.y + peach.height / 2, peach.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // 绘制大桃子
+            for (const bigPeach of bigPeaches) {
+                // 大桃子脉冲效果
+                const pulse = 1 + 0.1 * Math.sin(bigPeach.pulseTime * 10);
+                
+                ctx.save();
+                ctx.translate(
+                    bigPeach.x + bigPeach.width / 2,
+                    bigPeach.y + bigPeach.height / 2
+                );
+                ctx.scale(pulse, pulse);
+                
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(0, 0, bigPeach.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+            
+            // 绘制玩家
+            player.draw();
+        }
+        
+        // 切换暂停状态
+        function togglePause() {
+            if (gameState === GAME_STATE.PLAYING) {
+                gameState = GAME_STATE.PAUSED;
+                showScreen('pauseScreen');
+                if (gameLoopId) {
+                    cancelAnimationFrame(gameLoopId);
+                    gameLoopId = null;
+                }
+            } else if (gameState === GAME_STATE.PAUSED) {
+                gameState = GAME_STATE.PLAYING;
+                hideElement('pauseScreen');
+                lastTime = 0;
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // 游戏结束
+        function gameOver() {
+            console.log('游戏结束');
+            gameState = GAME_STATE.GAME_OVER;
+            
+            // 更新最高分
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('dasheng-highscore', highScore);
+            }
+            
+            // 更新UI
+            document.getElementById('finalScore').textContent = Math.floor(score);
+            document.getElementById('highScore').textContent = Math.floor(highScore);
+            
+            // 显示结束屏幕
+            showScreen('gameOverScreen');
+            hideElement('gameHUD');
+            
+            // 播放结束音效
+            if (settings.sound) {
+                playSound('gameOver');
+            }
+            
+            // 停止游戏循环
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+        }
+        
+        // 开始游戏
+        function startGame() {
+            console.log('开始游戏');
+            // 重置游戏状态
+            gameState = GAME_STATE.PLAYING;
+            score = 0;
+            gameSpeed = INITIAL_SPEED;
+            gameTime = 0;
+            dashEnergy = 0;
+            isDashing = false;
+            dashTime = 0;
+            platforms = [];
+            peaches = [];
+            bigPeaches = [];
+            particles = [];
+            
+            // 重置玩家
+            player.x = 100;
+            player.y = GAME_HEIGHT / 2;
+            player.velocityY = 0;
+            player.isOnGround = false;
+            player.hasDoubleJumped = false;
+            player.state = PLAYER_STATE.RUNNING;
+            
+            // 生成初始平台
+            generateInitialPlatforms();
+            
+            // 更新UI
+            document.getElementById('scoreDisplay').textContent = '0';
+            updateDashEnergy();
+            showElement('gameHUD');
+            hideElement('startScreen');
+            hideElement('pauseScreen');
+            hideElement('gameOverScreen');
+            
+            // 开始游戏循环
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+            }
+            lastTime = 0;
+            gameLoopId = requestAnimationFrame(gameLoop);
+            
+            console.log('游戏已开始');
+        }
+        
+        // 生成初始平台
+        function generateInitialPlatforms() {
+            // 清空现有平台
+            platforms = [];
+            
+            // 生成起始平台
+            platforms.push({
+                x: 0,
+                y: GAME_HEIGHT / 2 + 50,
+                width: PLATFORM_WIDTH * 3,
+                height: PLATFORM_HEIGHT
+            });
+            
+            // 生成后续平台
+            let x = PLATFORM_WIDTH * 3;
+            for (let i = 0; i < 5; i++) {
+                generatePlatform(x);
+                x += PLATFORM_WIDTH * (2 + Math.floor(Math.random() * 3)) + 50 + Math.random() * 100;
+            }
+        }
+        
+        // 更新冲刺能量UI
+        function updateDashEnergy() {
+            const percentage = Math.min(100, (dashEnergy / DASH_COST) * 100);
+            document.getElementById('energyFill').style.width = `${percentage}%`;
+            document.getElementById('dashBtn').disabled = dashEnergy < DASH_COST;
+        }
+        
+        // 播放音效
+        function playSound(soundName) {
+            if (sounds[soundName]) {
+                sounds[soundName]();
+            }
+        }
+        
+        // 显示指定屏幕
+        function showScreen(screenId) {
+            console.log('显示屏幕:', screenId);
+            // 隐藏所有屏幕
+            const screens = ['startScreen', 'rulesScreen', 'pauseScreen', 'gameOverScreen', 'settingsScreen'];
+            screens.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.classList.add('hidden');
+                }
+            });
+            
+            // 显示指定屏幕
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.remove('hidden');
+            }
+        }
+        
+        // 显示元素
+        function showElement(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.classList.remove('hidden');
+            }
+        }
+        
+        // 隐藏元素
+        function hideElement(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.classList.add('hidden');
+            }
+        }
+        
+        // 分享成绩
+        function shareScore() {
+            const score = Math.floor(document.getElementById('finalScore').textContent);
+            const shareText = `我在《大圣跑酷》中获得了${score}分！快来挑战我吧！`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: '大圣跑酷',
+                    text: shareText,
+                }).catch(err => {
+                    console.error('分享失败:', err);
+                    // 回退到复制到剪贴板
+                    copyToClipboard(shareText);
+                });
+            } else {
+                // 复制到剪贴板
+                copyToClipboard(shareText);
+            }
+        }
+        
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            alert('成绩已复制到剪贴板！');
+        }
+        
+        // 初始化游戏
+        function init() {
+            console.log('初始化游戏');
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // 设置画布尺寸
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // 加载最高分
+            highScore = localStorage.getItem('dasheng-highscore') || 0;
+            document.getElementById('highScore').textContent = highScore;
+            
+            // 创建音效
+            createSounds();
+            
+            // 设置事件监听
+            setupEventListeners();
+            
+            // 显示开始屏幕
+            showScreen('startScreen');
+        }
+        
+        // 调整画布尺寸
+        function resizeCanvas() {
+            const container = document.getElementById('game-container');
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            
+            // 保持游戏比例
+            const gameRatio = GAME_WIDTH / GAME_HEIGHT;
+            let newWidth, newHeight;
+            
+            if (containerWidth / containerHeight > gameRatio) {
+                newHeight = containerHeight;
+                newWidth = newHeight * gameRatio;
+            } else {
+                newWidth = containerWidth;
+                newHeight = newWidth / gameRatio;
+            }
+            
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+            canvas.style.width = `${newWidth}px`;
+            canvas.style.height = `${newHeight}px`;
+        }
+        
+        // 创建音效
+        function createSounds() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // 创建音效函数
+                function createSound(frequency, duration, type = 'sine') {
+                    return function() {
+                        try {
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioContext.destination);
+                            
+                            oscillator.frequency.value = frequency;
+                            oscillator.type = type;
+                            
+                            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                            
+                            oscillator.start(audioContext.currentTime);
+                            oscillator.stop(audioContext.currentTime + duration);
+                        } catch (e) {
+                            console.error('播放音效失败:', e);
+                        }
+                    };
+                }
+                
+                // 创建音效
+                sounds.jump = createSound(440, 0.1);
+                sounds.doubleJump = createSound(660, 0.15);
+                sounds.collect = createSound(880, 0.1);
+                sounds.bigCollect = createSound(1000, 0.2, 'square');
+                sounds.dash = createSound(220, 0.3, 'sawtooth');
+                sounds.gameOver = createSound(110, 0.5, 'triangle');
+                
+                console.log('音效资源已创建');
+            } catch (e) {
+                console.warn('Web Audio API不受支持，无法播放音效:', e);
+                // 创建空函数作为回退
+                sounds.jump = sounds.doubleJump = sounds.collect = sounds.bigCollect = sounds.dash = sounds.gameOver = () => {};
+            }
+        }
+        
+        // 设置事件监听
+        function setupEventListeners() {
+            console.log('设置事件监听');
+            
+            // 键盘事件
+            window.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    if (gameState === GAME_STATE.PLAYING) {
+                        player.jump();
+                    }
+                } else if (e.code === 'KeyP' && gameState === GAME_STATE.PLAYING) {
+                    togglePause();
+                } else if (e.code === 'KeyR' && gameState === GAME_STATE.GAME_OVER) {
+                    startGame();
+                }
+            });
+            
+            window.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+            
+            // 触摸事件
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchStartY = e.touches[0].clientY;
+            });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+            });
+            
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                if (gameState === GAME_STATE.PLAYING) {
+                    player.jump();
+                } else if (gameState === GAME_STATE.MENU) {
+                    // 在菜单状态下，点击画布也可以开始游戏
+                    const target = e.target;
+                    if (target === canvas || target.closest('.screen')) {
+                        startGame();
+                    }
+                }
+            });
+            
+            // 点击事件
+            canvas.addEventListener('click', (e) => {
+                if (gameState === GAME_STATE.PLAYING) {
+                    player.jump();
+                }
+            });
+            
+            // 按钮事件
+            document.addEventListener('click', (e) => {
+                const id = e.target.id;
+                console.log('点击元素ID:', id);
+                
+                // 开始屏幕按钮
+                if (id === 'startBtn') {
+                    startGame();
+                } else if (id === 'rulesBtn') {
+                    showScreen('rulesScreen');
+                } else if (id === 'settingsBtn') {
+                    showScreen('settingsScreen');
+                }
+                
+                // 规则屏幕按钮
+                else if (id === 'backToStartBtn') {
+                    showScreen('startScreen');
+                }
+                
+                // 设置屏幕按钮
+                else if (id === 'backToMenuFromSettingsBtn') {
+                    showScreen('startScreen');
+                } else if (id === 'soundToggle') {
+                    settings.sound = e.target.checked;
+                }
+                
+                // 暂停屏幕按钮
+                else if (id === 'resumeBtn') {
+                    togglePause();
+                } else if (id === 'restartBtn') {
+                    startGame();
+                } else if (id === 'exitBtn') {
+                    gameState = GAME_STATE.MENU;
+                    showScreen('startScreen');
+                    hideElement('gameHUD');
+                }
+                
+                // 结束屏幕按钮
+                else if (id === 'playAgainBtn') {
+                    console.log('点击再玩一次按钮');
+                    startGame();
+                } else if (id === 'shareBtn') {
+                    shareScore();
+                }
+                
+                // 游戏中按钮
+                else if (id === 'dashBtn' && gameState === GAME_STATE.PLAYING) {
+                    player.dash();
+                } else if (id === 'pauseBtn' && gameState === GAME_STATE.PLAYING) {
+                    togglePause();
+                }
+            });
+        }
+        
+        // 当页面加载完成时初始化游戏
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
